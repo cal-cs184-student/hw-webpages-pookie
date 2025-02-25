@@ -95,18 +95,22 @@
 
 		To implement supersampling in void RasterizerImp::rasterize_triangle , I first created super sample indexes for the x and y point I was evaluating. I think of it as the pixel was instead sqrt(sample_rate) x sqrt(sample_rate) (like as if I was zooming into a pixel) size box on the canvas colored by the color instead of a single pixel. Then, I simply check if each of these “zoomed in” pixels are still in the triangle. This is important to do instead of simply checking if x and y are the triangle because now that our “zoomed in pixel” is bigger, more of it might be out of the triangle than before (some points in the sqrt(sample_rate) x sqrt(sample_rate) box might be out). Then I color in the pixel by putting in the big zoomed in pixel into the buffer. At the end of this, our buffer is huge! It would be the buffer for the canvas of the regular image but now for the image magnified by the sample rate. 
 		</p>
-		
+
+		<p>
 		RasterizerImp::resolve_to_framebuffer() -> modified to set target color for rgb target buffer to downsampled color
 
 		This means when we resolve it to the rgb frame target, we need to minimize it again. I do this by taking iterations of sample_rate pixels from the buffer, downsampling it to a single color by averaging the sum, and then setting the target for the actual pixel to this down-sampled color. I think of this as “for every sample rate number of pixels in the magnified image, average the color of those pixels in the magnified image and only color in one pixel with this magnified image into the frame buffer”. 
 
 		To account for our huge super sample buffer before downsampling, the following functions have also been modified: 
-
+	</p>
+	<p>
 		RasterizerImp::set_sample_rate() -> buffer resized with new sample rate
+	</p>
 		RasterizerImp::set_framebuffer_target() -> buffer resized with new sample rate
-
+	
+	<p>
 		Supersampling is important because it helps us remove jaggies (anti-aliasing), especially for high frequency details like thin triangle edges. This makes the graphic smoother, and more visually appealing. It helps create the effect of a higher resolution image. As you can see in the image for rate 1, we have a very jaggy image. In rate = 4, we have some gradient on the edge because when we downsample, we are color averaging from more sample points which includes some of the white pixels, making the edge look less jagged. In rate = 16, this effect is dramatically larger because we are downsampling more pixels.  
-
+	</p>
 
 		<h2>Task 3: Transforms</h2>
 		<img src="robot.png" width="400px"/>
@@ -127,20 +131,27 @@
 
 
 		<h2>Task 5: "Pixel sampling" for texture mapping</h2>
+		<p>
 		In RasterizerImp::rasterize_textured_triangle() -> 
 
 		To implement pixel sampling for texture mapping, we need a way to store our graphic space into texture space. I do this by using barycentric coordinates as a transformation from the graphic space to texture. Finally, we compute the final sample color using either nearest-pixel or bilinear sampling, and color in the pixel. 
 
+		</p>
+
+		<p>
 		In Texture::sample_bilinear(Vector2D uv, int level) -> 
 
 		We convert the (u,v) coordinates to the texel coordinates (texture map) in the texture using a MipMap, which is a collection of textures at different levels of details. 0 corresponds to the original texture, which is what we will assume in Task 5. So we find the four nearest texels in this texture map to our (u, v), calculate the differences in texture from each of these texels to our (u, v) point, and use bilinear interpolation on these four texels to calculate the final color of our (u, v) point (which if you remember, corresponds to the x, y pixel) 
 
+		</p>
+		
+		<p>
 		In Texture::sample_nearest() -> 
 
 		Instead of performing interpolation, we simply round to find the closest texel of the (u, v) coordinate and return the color of the texel.
 
 		Nearest sampling simply finds the nearest texel to the (u, v) coordinate while bilinear uses bilinear interpolation across the four closest texels to (u, v). This means that bilinear has transitions, and is better for realistic images. This can be seen below: 
-
+		</p>
 		<div style="display: flex; flex-direction: column; align-items: center;">
 			<table style="width: 100%; text-align: center; border-collapse: collapse;">
 			  <tr>
@@ -171,32 +182,40 @@
 
 		<h2>Task 6: "Level Sampling" with mipmaps for texture mapping</h2>
 		
+		<p>
 		Level sampling (mipmap) sampling is when we store multiple versions of the texture at lower and lower resolutions, and then sample at the appropriate texture level. For example, when objects are farther away, they look more blurred in real life and don’t need a high resolution texture. Also, when you try to condense a high resolution texture to a single pixel, it can end up as the wrong color,  creating image artifacts. To figure out which mipmap level to use, similar to Task 5, we find the barycentric coordinates (u,v) for l (x, y). I also compute differentials in the x and y direction, (x+1,y) and (y+1, x). Then, I calculate the corresponding (u,v) texture point for each of these coordinates. 
 
 		We use differentials because it helps us compute how the texture coordinates change across the pixel. Think of this as basically “rate of change of the texture” in each direction. 
 
+	</p>
+	<p>
 		In Texture::get_level() -> 
 
 		I calculate the difference in texture coordinates for the x and y directions. I also calculate the magnitude of change in the x direction and magnitude of change in the y direction. Then, I return the mipmap level to sample from the largest rate of change between x and y direction. 
 
 		This is the mipmap level we will sample from. 
-
+	</p>
+	<p>
 		In Texture::sample() ->
 
 		To finish the implementation of bilinear level sampling, I take the two nearest levels to our target mipmap level and sample from them, weighting the output. For nearest level sampling, I simply round the level to the find the nearest level and sample from that level. 
 
 		We now have three sampling techniques: pixel sampling, level sampling, and supersampling (number of samples per pixel). The tradeoffs between speed, memory usage, and antialiasing power are as follows:
 
+	</p>
+	<p>
 		Supersampling: 
 
 		As we increase the sample rate, we have a much better anti-aliasing power and smoothest output, but we decrease speed and increase memory usage.
-
+	</p>
+	<p>
 		Level sampling: 
 
 		Nearest level sampling has the highest speed and lower memory usage than linear, results in less aliasing but not as well as linear level sampling 
 
 		Linear level sampling has lower speed and more memory usage than nearest level sampling, but better anti aliasing power
-
+	</p>
+	<p>
 		Pixel sampling: 
 
 		Nearest pixel sampling has less speed and memory usage than bilinear, but is not as good as anti aliasing. 
@@ -204,7 +223,7 @@
 		Bilinear is slower and about the same if not more memory usage than nearest, but better anti aliasing power. 
 
 		If speed needs to be prioritized, the best combination is bilinear pixel sampling, nearest level sampling, and a low sample rate. If high quality is the priority, then the combination should be bilinear pixel, linear level, and a high sample rate. Finally if memory is the priority, then we should use nearest pixel sampling, nearest level sampling, and a small sample rate. 
-
+	</p>
 		<img src="zeronearest.png" width="400px"/>
 		<img src="zerolinear.png" width="400px"/>
 
