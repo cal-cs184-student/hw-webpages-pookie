@@ -28,72 +28,146 @@
 	<body>
 		<div class="container">
 		<h1>CS184/284A Spring 2025 Homework 2 Write-Up</h1>
-		<div style="text-align: center;">Names: </div>
+		<div style="text-align: center;">Name: Sanika Bharvirkar </div>
 
 		<br>
 
-		Link to webpage: (TODO) <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a>
+		Link to webpage:  <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a>
 
 		<br>
 		
-		Link to GitHub repository: (TODO) <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a>
+		Link to GitHub repository:  <a href="https://github.com/cal-cs184-student/sp25-hw2-og-turkish-quandale-dingle">HW2 Github </a>
 
-		<figure>
-			<img src="teapot.png" alt="Teapot" style="width:50%"/>
-			<figcaption>You can add images with captions!</figcaption>
-		</figure>
 
 		<!--
 		We've already added one heading per part, to make your write-up as navigable when grading. Please fit your write-up within these sections!
 		-->
 
 		<h2>Overview</h2>
-		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
+		<p> This project/homework heavily relied on a strong foundational knowledge of meshes, and thus alot of my time was spent reviewing my understanding 
+			of half edges, verticies, faces, and connecting components. I found that debugging with regular techniques was less helpful than just having a detailed 
+			overview of how I expected my code to work.
+		</p>
 
 		<h2>Section I: Bezier Curves and Surfaces</h2>
 
 		<h3>Part 1: Bezier curves with 1D de Casteljau subdivision</h3>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		
+		<p>I linearly interpolate between each of these control points and then find the point at each of these interlopations at some parameter t, leaving us with n-1 points. The formula is as follows: p’i = (1 - t)pi + t*pi+1 . I keep performing these subdivisions with evaluateStep until I get to the final point, at which I have traced out our bezier curve! Here is an example with 6 control points: </p>
+		
 
-		<p>Here is an example 2x2 gridlike structure using an HTML table. Each <b>tr</b> is a row and each <b>td</b> is a column in that row. You might find this useful for framing and showing your result images in an organized fashion.</p>
 		<div style="display: flex; flex-direction: column; align-items: center;">
 			<table style="width: 100%; text-align: center; border-collapse: collapse;">
 			  <tr>
 				<td style="text-align: center;">
-				  <img src="teapot.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="bz0.png" width="400px"/>
+				  <figcaption>Stepping through evaluateStep</figcaption>
 				</td>
 				<td style="text-align: center;">
-				  <img src="teapot.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-			  </tr>
-			  <tr>
-				<td style="text-align: center;">
-				  <img src="teapot.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="bz1.png" width="400px"/>
+				  <figcaption>Stepping through evaluateStep.</figcaption>
 				</td>
 				<td style="text-align: center;">
-				  <img src="teapot.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+					<img src="bz2.png" width="400px"/>
+					<figcaption>Stepping through evaluateStep.</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bz3.png" width="400px"/>
+					<figcaption>Stepping through evaluateStep.</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bz4.png" width="400px"/>
+					<figcaption>Stepping through evaluateStep.</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bz5.png" width="400px"/>
+					<figcaption>Stepping through evaluateStep.</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bzfc.png" width="400px"/>
+					<figcaption>Final curve rendered.</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bzt.png" width="400px"/>
+					<figcaption>Modifying paramater t.</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bzc.png" width="400px"/>
+					<figcaption>Modifying control points.</figcaption>
 				</td>
 			  </tr>
 			</table>
 		</div>
 
 		<h3>Part 2: Bezier surfaces with separable 1D de Casteljau</h3>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<p>We can extend the Casteljau algorithm to bezier surfaces by trying to think of it as two dimensional with parameters u and v. To get the point at  u,v, we first linearly interpolate across the curves that define the surface across v. Then, we should have a point for each curve that defines this surface. Finally, we can linearly interpolate along these new points with u, and after finishing de Casteljau’s algorithm, we should have a point that is linearly interpolated along both the u axis and v axis. The basic idea is linearly interpolate with parameter v along n curves (n rows in the algorithm) using evaluate1D (which steps through the curve with evaluateStep until we have a final point) for each curve, resulting in n single control points (each corresponding to a row in the matrix, remember we can visualize a row as an individual bezier curve). Then, I interpolate along these n final control points with parameter u (think about this as interpolating amongst columns) using evaluate1D again.. I think of this as the de  Casteljau algorithm extended to 2D. Here is the result, “./meshedit ../bez/teapot.bez”, of my implementation:</p>
 
+
+		<img src="teapotbez.png" width="400px"/>
 		<h2>Section II: Triangle Meshes and Half-Edge Data Structure</h2>
 
 		<h3>Part 3: Area-weighted vertex normals</h3>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		
+		<p>I implemented area weighted normals by using a modified neighboring vertex traversal. Given our vertex v, I traverse all the half edges that point back to v. I use the vertex that defines this half edge (the vertex where the half edge is pointing from), v, and the third vertex found by h->next()->twin()->vertex() to define a face incident to our vertex v. I call these vertices the left and right vertices in respect to v. To compute the normal, for each of these incident faces, I sum up the cross product of the vector from left->v and v->right, then divide by 2 (remember area of a triangle is (½ * width * height). Think of the magnitude of the cross product as the rectangular space enclosed between these two vectors. I keep checking for incident faces until we reach back to our original half edge, which is when we know our traversal is complete. I use the unit method to normalize the vector sum of face areas. Now because we are computing the face area with vectors starting from the left vertex and v instead of both vectors starting from v, we end up with an oppositely oriented normal that points towards the inside of the model. I solve this by simply reversing the normal of the sum of face cross products by multiplying by negative 1. </p>
+
+		<p>Area weighted vertex normals are used for phong shading, and we can see the results here: </p>
+
+		<p>Without shading:</p>
+
+		<img src="teanoshade.png" width="400px"/>
+
+		<p>With shading:</p>
+
+		<img src="teashade.png" width="400px"/>
+
 
 		<h3>Part 4: Edge flip</h3>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		
+		<p>Implementing the edge flip operation was tricky because it demands a very strong understanding of all the proper allocations of pointers for vertices, edges, and faces. I implemented this edge flip by drawing out a diagram from class: </p>
+
+		<img src="edgeflipd.png" width="400px"/>
+
+		<p>In order to not delete or add any variables, I simply acted as if the edge given to us and the half edges corresponding to it were now the new edge and half edges. I saved a lot of headache by simply reassigning every pointer of these two half edges to ones of the new half edges. I similarly changed the pointer of the edge given to us and the half edges of the face. The best way I can describe this is that I treated the half edges, edge, and original faces of the original edge/half edges as the new elements in our modified mesh. </p>
+
+		<p>Teapot after edge flips: </p>		
+		<img src="edgeflipd.png" width="400px"/>
+
+		<p>Debugging journey: </p>
+
+		<p>I found that the half edge data was very helpful for trying to debug/gain intuition for this task. I would take a screen shot of the half edge before I flipped the edge, and then a screenshot after and compare the memory addresses of the elements according to my implementation to see if my code had accurately implemented my drawings/ideas. </p>
+
+		<img src="flipdebug.png" width="400px"/>
 
 		<h3>Part 5: Edge split</h3>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<p>I implemented edge splits similarly. I drew a diagram of all the updated pointers, and what the new mesh would look like. In order to prevent any deletions, I treated the two old faces as two new ones by reassigning all their pointers, and treated the edge given to me as the edge with the same half edges pointing away from the new vertex, m. 
+
+			Here is my implementation: 
+		</p>
+
+		<img src="edgesplitd.png" width="400px"/>
+
+		<p>In this example, you can see how if we were given edge b-c, I would treat this edge as edge m-c and assign the half edges accordingly. In order to prevent most bugs, I reassigned all the pointers to every face, vertex, edge and half edge using the setNeighbors function. Here is an example so you can see the difference: </p>
+
+		<p>	Just edge splits: </p>
+
+		<img src="tsplit.png" width="400px"/>
+
+		<p>	Edge flips and splits: </p>
+
+		<img src="tsplitandflip.png" width="400px"/>
+
+		<p>As you can see the combination of edge splits and edge flips creates a unique pattern. In my debugging journey, I ran into issues with face deletion. Here are some examples of what I ran into: </p>
+
+		<img src="debug1.png" width="400px"/>
+
+		<img src="debug2.png" width="400px"/>
+
+		<p>I used the check_for function to check if I had the correct number of half edges pointing to each face like so: </p>
+
+		<img src="dlog.png" width="400px"/>
+
+		<p>Eventually I realized that I had 4 pointers to the old edges and only 2 to the new ones. This was a mistake in how I interpreted reassigning the faces (and also partially my understanding of faces). After I corrected this, I was able to split the edges successfully! </p>
+
 
 		<h3>Part 6: Loop subdivision for mesh upsampling</h3>
 		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
