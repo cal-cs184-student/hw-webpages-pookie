@@ -46,7 +46,8 @@
 		<h2>Overview</h2>
 		<p> This project/homework heavily relied on a strong foundational knowledge of meshes, and thus alot of my time was spent reviewing my understanding 
 			of half edges, verticies, faces, and connecting components. I found that debugging with regular techniques was less helpful than just having a detailed 
-			overview of how I expected my code to work.
+			overview of how I expected my code to work. I've also been trying out Github Copilot, which has helped me code and in this writeup, specifically with website formatting
+			and debugging. 
 		</p>
 
 		<h2>Section I: Bezier Curves and Surfaces</h2>
@@ -169,21 +170,59 @@
 
 
 		<h3>Part 6: Loop subdivision for mesh upsampling</h3>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<p>Loop subdivision was the hardest part for me to implement. I began with traversing all the vertices in the mesh, setting each vertex’s isNew parameter to false. Then using half edge traversal, I calculated the degree of the vertex and sum of all its neighboring vertices. </p>
 
-		<h2>(Optional) Section III: Potential Extra Credit - Art Competition: Model something Creative</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<p>The new position of the vertex in the subdivided mesh is following this formula: </p>
 
-		<h2>Additional Notes (please remove)</h2>
-		<ul>
-			<li>You can also add code if you'd like as so: <code>code code code</code></li>
-			<li>If you'd like to add math equations, 
-				<ul>
-					<li>You can write inline equations like so: \( a^2 + b^2 = c^2 \)</li>
-					<li>You can write display equations like so: \[ a^2 + b^2 = c^2 \]</li>
-				</ul>
-			</li>
-		</ul>
+		<p>If degree of vertex is 3, u = 3/16 
+			Else, u = 3/(8*degree)
+		</p>
+
+		<p>begin_vertex->newPosition = (1 - n*u) * begin_vertex->position + u * sum;</p>
+
+		<p>I then assigned the newPosition parameter to store where the vertex would be in the subdivided mesh. After I did this, I also traverested the edges and calculated the new position for each edge, similarly storing it in newPosition.</p>
+
+		<p>The new edge position is calculated as follows: </p>
+
+		<p>begin_edge->newPosition = \( (3.F/8.F)*(A->position+B->position) + (1.F/8.F)*(C->position+D->position) \);</p>
+
+		<p>Where (A, B) are the vertices of the edge, which will eventually be split, and (C, D) are the vertices that the new outgoing edges from edge split will be connected to. </p>
+
+		<p> After this, came the challenge of splitting the edges. In order to make sure I wasn’t iterating over new edges generated from splitting the old ones, I created a vector list to store all the initial edges, and only traversed these old ones and split them. As I split the edge, I updated the new vertex generated to represent a new vertex and its newPosition as the position on the edge it was split from. In the splitEdge function, I also updated all the edges to represent whether they were new edges generated from the split or old ones. Now, we are ready to flip edges. In order to do this while traversing the edges in the new mesh, I had to ensure that each edge we were flipping was an edge between an old vertex and a new vertex. I also had to ensure that the edge was a new edge created from splitting edges. This is where the isNew parameter I had assigned in early traversals for edges and vertices came in handy, as I was easily able to check for these conditions with a couple of if statements. After these conditions were verified, I flipped the edge. After flipping edges, I simply had to update all the vertex positions to their new positions in the subdivided mesh.</p>
+
+		<p>An issue I had with subdivision was that sometimes I would be flipping edges that were old as well. I realized that when I was splittingEdges, I had to explicitly set the isNew parameter of the old edges to False. This is because if I didn’t do that, the isNew parameter is set to a garbage value since it is initialized, and comparing it to True led to undefined behavior. This is definitely going to be helpful knowledge about C++ down the line! </p>
+
+		<p>Loop subdivision is helpful to smooth out corners and edges, leading to a less jagged, more visually pleasing result. Here is an example from ../dae/icosahedron/input.dae</p>
+
+		<img src="hed1.png" width="400px"/>
+		<img src="hed2.png" width="400px"/>
+		<img src="hed3.png" width="400px"/>
+
+		<p>Our object is a lot more rounded now! </p>
+
+		<p>I also tested my implementation on dae/cube: </p>
+
+		<img src="cubebad1.png" width="400px"/>
+		<img src="cubebad2.png" width="400px"/>
+
+		<p>As you can see, especially after the wire frame is toggled off, the edges and sharp corners do not smooth out completely. The cube is also asymmetrically spiky, with only a couple sharp points sticking out. This should not be the behavior we want, since a cube is an inherently symmetrical geometric object. Here is the cube after a couple of initial subdivisions, to see how this behavior is inherent to the mesh of the cube and how the asymmetry becomes less pronounced but still apparent after subdivisions: </p>
+
+		<img src="cube1.png" width="400px"/>
+		<img src="cube2.png" width="400px"/>
+		<img src="cube3.png" width="400px"/>
+
+		<p>This is likely because in the initial mesh, each square face of the cube only has one diagonal edge on each face. Therefore, when we split edges we are only splitting across the one diagonal, then when we flip these new edges the width of the object gets smaller while the unflipped edge (the original diagonal) remains longer. This problem can be solved by initially splitting the edges at each face, so we have symmetry in terms of subdivision across each face horizontally and vertically. </p>
+
+		<p>Here is the result of splitting the edges initially:</p>
+
+		<img src="cubesplit.png" width="400px"/>
+		<img src="nicecube1.png" width="400px"/>
+		<img src="nicecube2.png" width="400px"/>
+		<img src="nicecube3.png" width="400px"/>
+		<img src="nicecube4.png" width="400px"/>
+
+		<p>As you can see, the cube is now symmetrically subdivided across each face, leading to a more visually pleasing result. Our cube is a lot smoother and symmetrical now!</p>
+
 		</div>
 	</body>
 </html>
